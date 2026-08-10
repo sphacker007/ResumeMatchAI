@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: resume-match-ai-api
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_MODEL
+        value: gpt-5.6-terra
+      - key: ALLOWED_ORIGINS
+        sync: false

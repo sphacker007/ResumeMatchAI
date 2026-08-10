@@ -19,7 +19,7 @@ ResumeMatch AI is a truth-first resume tailoring application that edits selected
 
 ```text
 Browser
-  -> vinext / React / TypeScript frontend
+  -> Next.js / React / TypeScript frontend on Vercel
   -> FastAPI service
        -> PyMuPDF coordinate extraction
        -> deterministic JD + matching engine
@@ -29,14 +29,13 @@ Browser
        -> temporary one-hour session storage
 ```
 
-The frontend is Cloudflare Worker-compatible and can be hosted with OpenAI Sites. The Python backend is container-ready for Render, Railway, Fly.io, or another service with a persistent process and enough memory for PyMuPDF. Keeping the PDF engine outside a constrained frontend function avoids weakening format preservation.
+The frontend uses standard Next.js and is configured for native Vercel deployment. The Python backend is container-ready for Render, Railway, Fly.io, or another service with a persistent process and enough memory for PyMuPDF. Keeping the PDF engine outside a constrained frontend function avoids weakening format preservation.
 
 ## Repository structure
 
 ```text
 app/                     Product interface
 public/                  Static assets and social card
-worker/                  Cloudflare/vinext entry point
 backend/app/main.py      FastAPI routes
 backend/app/models.py    Validated API and AI contracts
 backend/app/services/    PDF, matching, tailoring, and layout modules
@@ -138,7 +137,7 @@ Rendered proof files are written locally to `output/pdf/` during the acceptance 
 
 ### Frontend
 
-Set `NEXT_PUBLIC_API_URL` to the deployed backend URL, run the production build, and deploy through OpenAI Sites. If using another compatible host, preserve the vinext Cloudflare Worker output or migrate the frontend build intentionally; do not move PyMuPDF into a constrained edge function.
+Create or import the `resume-match-ai` project in Vercel with the repository root as the project root, framework preset `Next.js`, install command `pnpm install --frozen-lockfile`, and build command `pnpm run build`. Set `NEXT_PUBLIC_API_URL` to the deployed HTTPS backend URL for production and preview. Use `main` as the production branch so future pushes trigger deployments automatically. Do not move PyMuPDF into a short-lived serverless function.
 
 ## Known limitations
 
@@ -151,4 +150,3 @@ Set `NEXT_PUBLIC_API_URL` to the deployed backend URL, run the production build,
 ## AI implementation note
 
 The OpenAI integration is isolated behind `AIProvider`, uses the Responses API, requests strict JSON Schema output, validates it with Pydantic, sends extracted text instead of the full PDF, and makes a second request only when a future repair path requires it. Official guidance recommends the Responses API for current reasoning workflows and structured schema output for reliable machine-readable results.
-

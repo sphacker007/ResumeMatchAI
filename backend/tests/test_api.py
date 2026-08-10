@@ -8,7 +8,8 @@ from app.main import app
 client = TestClient(app)
 
 
-def test_upload_analyze_tailor_generate_download(sample_resume: Path, sample_jd: str):
+def test_upload_analyze_tailor_generate_download(sample_resume: Path, sample_jd: str, monkeypatch):
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
     with sample_resume.open("rb") as handle:
         response = client.post(
             "/api/analyze",
@@ -38,4 +39,3 @@ def test_rejects_non_pdf(sample_jd: str):
         data={"job_description": sample_jd},
     )
     assert response.status_code == 422
-

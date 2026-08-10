@@ -67,6 +67,7 @@ def propose_changes(regions: list[TextRegion], job: JobAnalysis, strength: str) 
         if not region or _protected(region.text, region.section) or change.original_text != region.text:
             continue
         change.fit_status = _fit_status(change.original_text, change.replacement_text)
+        if change.fit_status == "overflow":
+            change.status = "rejected"
         safe.append(change)
     return safe
-

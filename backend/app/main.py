@@ -134,6 +134,8 @@ def generate(request: GenerateRequest):
     session = _session(request.session_id)
     valid_by_region = {region.id: region for region in session.regions}
     for change in request.changes:
+        if change.status != "accepted":
+            continue
         region = valid_by_region.get(change.region_id)
         if not region or change.original_text != region.text:
             raise HTTPException(422, "A proposed change no longer matches the original PDF text.")

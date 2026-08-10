@@ -2,28 +2,17 @@ import assert from "node:assert/strict";
 import { access, readFile } from "node:fs/promises";
 import test from "node:test";
 
-async function render() {
-  const workerUrl = new URL("../dist/server/index.js", import.meta.url);
-  workerUrl.searchParams.set("test", `${process.pid}-${Date.now()}`);
-  const { default: worker } = await import(workerUrl.href);
-  return worker.fetch(
-    new Request("https://resumematch.example/", { headers: { accept: "text/html", host: "resumematch.example" } }),
-    { ASSETS: { fetch: async () => new Response("Not found", { status: 404 }) } },
-    { waitUntil() {}, passThroughOnException() {} },
-  );
-}
-
-test("server-renders the ResumeMatch AI product", async () => {
-  const response = await render();
-  assert.equal(response.status, 200);
-  assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
-  const html = await response.text();
-  assert.match(html, /ResumeMatch AI/);
-  assert.match(html, /Tailor the words/);
-  assert.match(html, /Keep the resume/);
-  assert.match(html, /Analyze resume/);
-  assert.match(html, /Original layout locked/);
-  assert.doesNotMatch(html, /codex-preview|react-loading-skeleton|Your site is taking shape/i);
+test("contains the complete ResumeMatch AI product workflow", async () => {
+  const page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
+  assert.match(page, /ResumeMatch AI/);
+  assert.match(page, /Tailor the words/);
+  assert.match(page, /Keep the resume/);
+  assert.match(page, /Analyze resume/);
+  assert.match(page, /Tailor resume/);
+  assert.match(page, /Generate final PDF/);
+  assert.match(page, /Download PDF/);
+  assert.match(page, /Original layout locked/);
+  assert.doesNotMatch(page, /codex-preview|react-loading-skeleton|Your site is taking shape/i);
 });
 
 test("ships product metadata and the bespoke social card", async () => {

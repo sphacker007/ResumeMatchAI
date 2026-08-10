@@ -130,7 +130,7 @@ Rendered proof files are written locally to `output/pdf/` during the acceptance 
 ### Backend (Render Blueprint)
 
 1. Push the repository to GitHub.
-2. Create a Render Blueprint from `render.yaml`.
+2. Create a Render Blueprint from `render.backend.yaml` (the explicit name prevents Vercel from interpreting the backend manifest as a frontend service definition).
 3. Set `OPENAI_API_KEY` if AI rewriting is desired.
 4. Set `ALLOWED_ORIGINS` to the final frontend origin.
 5. Confirm `https://<backend>/health` returns `{ "status": "ok" }`.

@@ -53,3 +53,5 @@ backend/tests/.artifacts/
 # generated resumes and local secrets
 *.pdf
 !.github/**/*.pdf
+
+.env*

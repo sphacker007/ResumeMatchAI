@@ -1,22 +1,4 @@
 import type { Metadata } from "next";
-import { headers } from "next/headers";
 import "./globals.css";
-
-export async function generateMetadata(): Promise<Metadata> {
-  const incoming = await headers();
-  const host = incoming.get("x-forwarded-host") || incoming.get("host") || "localhost:3000";
-  const protocol = incoming.get("x-forwarded-proto") || (host.startsWith("localhost") ? "http" : "https");
-  const image = `${protocol}://${host}/og.png`;
-  const title = "ResumeMatch AI — Tailor Words, Keep Your Format";
-  const description = "Truth-first AI resume tailoring that edits your original PDF in place and verifies layout preservation before download.";
-  return {
-    title,
-    description,
-    openGraph: { title, description, type: "website", images: [{ url: image, width: 1536, height: 1024, alt: "ResumeMatch AI original and tailored resume comparison" }] },
-    twitter: { card: "summary_large_image", title, description, images: [image] },
-  };
-}
-
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="en"><body>{children}</body></html>;
-}
+export const metadata: Metadata = { title: "VENTORA — Private AI Business OS", description: "Private AI business operating system for decisions, operations, growth and finance." };
+export default function RootLayout({children}:{children:React.ReactNode}){return <html lang="en"><body>{children}</body></html>}

@@ -3,9 +3,9 @@ import {db,query,clean,log} from '../../../lib/server';
 import {prepareApplications,submitReady} from '../../../lib/autopilot';
 import {roleRelevance} from '../../../lib/role-fit';
 import {scanDiceJobs} from '../../../lib/dice';
-import {refreshMatches} from '../../../lib/server';
 export const dynamic='force-dynamic';
 export const runtime='nodejs';
+export const maxDuration=60;
 const ok=(x,status=200)=>NextResponse.json(x,{status,headers:{'Cache-Control':'no-store'}});
 const bad=(s,status=400)=>ok({error:s},status);
 const isUuid=(s)=>/^[0-9a-f-]{36}$/i.test(String(s||''));
@@ -45,7 +45,6 @@ export async function POST(request){
   const cid=isUuid(p.candidate_id)?p.candidate_id:null;
   const targets=await query(sql,'SELECT DISTINCT role FROM bm_candidates WHERE active=true'+(cid?' AND id=$1':'')+' LIMIT 3',cid?[cid]:[]);
   const discovery=targets.length?await scanDiceJobs(sql,targets.map(c=>c.role),10):{imported:0,queries:0};
-  if(discovery.imported)await refreshMatches(sql);
   const result=await prepareApplications(sql,cid);
   return ok({...result,discovery});
  }

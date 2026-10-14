@@ -44,11 +44,13 @@ export async function POST(request,{params}){
    return ok({created:true},201);
   }
   if(action==='source'){
-   const token=clean(input.token,120),company=clean(input.company,180);
-   if(!/^[a-zA-Z0-9_-]{2,120}$/.test(token)||!company)return bad('Enter a Greenhouse board token and company name.');
+   const slug=clean(input.token,120),company=clean(input.company,180),provider=clean(input.provider||'greenhouse',25).toLowerCase();
+   if(!['greenhouse','lever','ashby'].includes(provider))return bad('Unsupported provider');
+   if(!/^[a-zA-Z0-9_-]{2,120}$/.test(slug)||!company)return bad('Enter an official public career-board slug and company name.');
+   const token=provider==='greenhouse'?slug:provider+':'+slug;
    await query(sql,'INSERT INTO bm_sources(company,token) VALUES ($1,$2) ON CONFLICT(token) DO UPDATE SET company=EXCLUDED.company,enabled=true',[company,token]);
-   await log(sql,'source','Added job board: '+company);
-   return ok({created:true},201);
+   await log(sql,'source','Added '+provider+' read-only public job feed for '+company);
+   return ok({created:true,provider},201);
   }
   if(action==='contact'){
    const address=clean(input.email,254).toLowerCase(),name=clean(input.name,140),company=clean(input.company,180);

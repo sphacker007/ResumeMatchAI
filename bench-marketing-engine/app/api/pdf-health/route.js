@@ -12,12 +12,18 @@ const SAMPLE_PDF=["JVBERi0xLjcKJcK1wrYKCjEgMCBvYmoKPDwvVHlwZS9DYXRhbG9nL1BhZ2VzI
 "MERDMkI1M0E3NTNGMUVDMkEwPjwxOEJCQjExM0FFMUMxQUU0REY4OEQzMjNDRjVDMEJENT5dPj4Kc3RhcnR4cmVmCjUyMgolJUVPRgo="].join('');
 export async function GET(){
   try{
-    const mod=await import('pdf-parse/lib/pdf-parse.js');
-    const parser=mod.default||mod;
+    await import('pdf-parse/worker');
+    const {PDFParse}=await import('pdf-parse');
     const sample=Buffer.from(SAMPLE_PDF,'base64');
-    const result=await parser(sample);
+    const parser=new PDFParse({data:new Uint8Array(sample)});
+    let result;
+    try {
+      result=await parser.getText();
+    } finally {
+      await parser.destroy();
+    }
     if(!String(result.text||'').includes('BenchPilot parser smoke check'))throw new Error('PDF text could not be extracted');
-    return NextResponse.json({pdfReader:'working',pages:result.numpages,test:'selectable text extracted',readsCandidateData:false},{headers:{'Cache-Control':'no-store'}});
+    return NextResponse.json({pdfReader:'working',pages:result.total||result.pages?.length||1,test:'selectable text extracted',readsCandidateData:false},{headers:{'Cache-Control':'no-store'}});
   }catch(e){
     console.error('PDF parser smoke test failed',e);
     return NextResponse.json({pdfReader:'unavailable',error:String(e.message||e).slice(0,150)},{status:503});

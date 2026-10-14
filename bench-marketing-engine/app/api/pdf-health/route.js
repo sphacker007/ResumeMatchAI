@@ -1,37 +1,25 @@
 import {NextResponse} from 'next/server';
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
-function syntheticPdf(){
-  const stream='BT /F1 14 Tf 45 700 Td (BenchPilot synthetic PDF extraction check) Tj ET';
-  const objects=[
-    '<< /Type /Catalog /Pages 2 0 R >>',
-    '<< /Type /Pages /Count 1 /Kids [3 0 R] >>',
-    '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>',
-    '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
-    '<< /Length '+stream.length+' >>\nstream\n'+stream+'\nendstream'
-  ];
-  let pdf='%PDF-1.4\n';
-  const offsets=[];
-  for(let i=0;i<objects.length;i++){
-    offsets.push(Buffer.byteLength(pdf));
-    pdf+=(i+1)+' 0 obj\n'+objects[i]+'\nendobj\n';
-  }
-  const start=Buffer.byteLength(pdf);
-  pdf+='xref\n0 6\n0000000000 65535 f \n';
-  for(const offset of offsets)pdf+=String(offset).padStart(10,'0')+' 00000 n \n';
-  pdf+='trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n'+start+'\n%%EOF\n';
-  return Buffer.from(pdf,'utf8');
-}
+const SAMPLE_PDF=["JVBERi0xLjcKJcK1wrYKCjEgMCBvYmoKPDwvVHlwZS9DYXRhbG9nL1BhZ2VzIDIgMCBSPj4KZW5kb2JqCgoyIDAgb2JqCjw8L1R5cGUvUGFnZXMvQ291bnQg",
+"MS9LaWRzWzQgMCBSXT4+CmVuZG9iagoKMyAwIG9iago8PC9Gb250PDwvaGVsdiA1IDAgUj4+Pj4KZW5kb2JqCgo0IDAgb2JqCjw8L1R5cGUvUGFnZS9NZWRp",
+"YUJveFswIDAgNTk1IDg0Ml0vUm90YXRlIDAvUmVzb3VyY2VzIDMgMCBSL1BhcmVudCAyIDAgUi9Db250ZW50c1s2IDAgUl0+PgplbmRvYmoKCjUgMCBvYmoK",
+"PDwvVHlwZS9Gb250L1N1YnR5cGUvVHlwZTEvQmFzZUZvbnQvSGVsdmV0aWNhL0VuY29kaW5nL1dpbkFuc2lFbmNvZGluZz4+CmVuZG9iagoKNiAwIG9iago8",
+"PC9MZW5ndGggMTAzL0ZpbHRlci9GbGF0ZURlY29kZT4+CnN0cmVhbQp42hWLsQ6DMAwFd3+F/6COg59BQh2QWLpV8lZ1SUvEAAML30/QTSfd0UFTUGJpJDZj",
+"751jp8e6bCcn5aj8GTuFYUFGb4IBP1TvVFyQXD3DXJtl/FFRYCp32Y6M8vzGi+agN13pTRfuCmVuZHN0cmVhbQplbmRvYmoKCnhyZWYKMCA3CjAwMDAwMDAw",
+"MDAgNjU1MzUgZiAKMDAwMDAwMDAxNiAwMDAwMCBuIAowMDAwMDAwMDYyIDAwMDAwIG4gCjAwMDAwMDAxMTQgMDAwMDAgbiAKMDAwMDAwMDE1NSAwMDAwMCBu",
+"IAowMDAwMDAwMjYyIDAwMDAwIG4gCjAwMDAwMDAzNTEgMDAwMDAgbiAKCnRyYWlsZXIKPDwvU2l6ZSA3L1Jvb3QgMSAwIFIvSURbPEMzQTI1QkMzOTNDM0FG",
+"MERDMkI1M0E3NTNGMUVDMkEwPjwxOEJCQjExM0FFMUMxQUU0REY4OEQzMjNDRjVDMEJENT5dPj4Kc3RhcnR4cmVmCjUyMgolJUVPRgo="].join('');
 export async function GET(){
   try{
     const mod=await import('pdf-parse/lib/pdf-parse.js');
-    const parse=mod.default||mod;
-    const result=await parse(syntheticPdf());
-    const text=String(result.text||'');
-    if(!text.includes('BenchPilot synthetic PDF extraction check'))throw Error('Extracted text does not match test input');
-    return NextResponse.json({pdfReader:'working',pages:result.numpages,test:'synthetic PDF text extracted',readsCandidateData:false},{headers:{'Cache-Control':'no-store'}});
-  }catch(error){
-    console.error('PDF parser smoke test failed',error);
-    return NextResponse.json({pdfReader:'unavailable',error:String(error.message||error).slice(0,220)},{status:503});
+    const parser=mod.default||mod;
+    const sample=Buffer.from(SAMPLE_PDF,'base64');
+    const result=await parser(sample);
+    if(!String(result.text||'').includes('BenchPilot parser smoke check'))throw new Error('PDF text could not be extracted');
+    return NextResponse.json({pdfReader:'working',pages:result.numpages,test:'selectable text extracted',readsCandidateData:false},{headers:{'Cache-Control':'no-store'}});
+  }catch(e){
+    console.error('PDF parser smoke test failed',e);
+    return NextResponse.json({pdfReader:'unavailable',error:String(e.message||e).slice(0,150)},{status:503});
   }
 }

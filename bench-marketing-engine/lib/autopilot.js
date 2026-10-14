@@ -5,6 +5,12 @@ export function evaluate(c,j,p){
  const jd=clean(j.description,16000);
  const blockers=[];
  if(score.flags)blockers.push(score.flags);
+ const candidateLoc=clean(c.location,220).toLowerCase();
+ const jobLoc=clean(j.location,220).toLowerCase();
+ const remote=/remote|anywhere|united states|usa/.test(jobLoc);
+ if(candidateLoc && jobLoc && !remote && !candidateLoc.split(/[,;/]/).map(x=>x.trim()).filter(x=>x.length>2).some(part=>jobLoc.includes(part)||part.includes(jobLoc)))blockers.push('Job location does not match the candidate location preferences.');
+ const requestedYears=[...jd.matchAll(/(?:at least|minimum(?: of)?|requires?)?\s*(\d{1,2})\+?\s*years? (?:of )?(?:professional )?(?:experience|in)/gi)].map(m=>Number(m[1]));
+ if(requestedYears.length&&Number(c.experience||0)>0&&Math.max(...requestedYears)>Number(c.experience)+1)blockers.push('Experience minimum exceeds verified years.');
  if(EXCLUDE.test(jd))blockers.push('The posting excludes staffing firm submissions.');
  if(/no sponsorship|unable to sponsor|will not sponsor/i.test(jd)&&/need sponsorship|require sponsorship/i.test(c.notes+' '+p.preferences))blockers.push('Sponsorship excluded.');
  const skills=clean(c.skills,4000).split(/[,;\n]/).map(s=>s.trim()).filter(Boolean);

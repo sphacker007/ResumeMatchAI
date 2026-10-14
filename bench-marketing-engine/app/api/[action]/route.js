@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db,clean,query,log,refreshMatches,scanSources,draftMessage } from '../../../lib/server';
 import {readPublicJobs,parseFeedToken} from '../../../lib/feeds';
+import {scanDiceJobs} from '../../../lib/dice';
 import {prepareApplications,submitReady} from '../../../lib/autopilot';
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
@@ -79,6 +80,15 @@ export async function POST(request,{params}){
    const matches=await refreshMatches(sql,null,rows[0].id);
    await log(sql,'job','Added a manually verified requirement at '+company+'; '+matches+' matches.');
    return ok({created:true},201);
+  }
+  if(action==='dice-search'){
+    const keyword=clean(input.keyword,70);
+    if(keyword.length<3)return bad('Enter a job title or technical keyword');
+    const scan=await scanDiceJobs(sql,[keyword],15);
+    const matches=scan.imported?await refreshMatches(sql):0;
+    const applications=scan.imported?await prepareApplications(sql):{prepared:0,ready:0,blocked:0};
+    await log(sql,'dice','Manually searched Dice for '+keyword+'; recorded '+scan.imported+' job listings.');
+    return ok({scan,matches,applications});
   }
   if(action==='scan'){const scan=await scanSources(sql);const applications=await prepareApplications(sql);const submissions=await submitReady(sql,5);return ok({scan,applications,submissions});}
   if(action==='stage'){

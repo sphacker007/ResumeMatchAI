@@ -1,6 +1,9 @@
 import {clean,query,matchCandidate,log} from './server';
+import {roleRelevance} from './role-fit';
 const EXCLUDE=/\b(no (staffing )?agencies|no third[- ]party (candidates?|recruiters?|vendors?)|no vendors|no c2c|w2 only)\b/i;
 export function evaluate(c,j,p){
+ const relevance=roleRelevance(c,j);
+ if(!relevance.relevant)return {status:'irrelevant',quality:0,reason:relevance.reason,body:''};
  const score=matchCandidate(c,j);
  const jd=clean(j.description,16000);
  const blockers=[];
@@ -38,6 +41,7 @@ export async function prepareApplications(sql,candidateId=null){
  const jobs=await query(sql,"SELECT * FROM bm_jobs ORDER BY created_at DESC LIMIT 160");
  let prepared=0,ready=0,blocked=0;
  for(const c of profiles)for(const j of jobs){
+  if(!roleRelevance(c,j).relevant)continue;
   const r=evaluate(c,j,c);
   if(r.quality<Math.max(50,c.min_score-25)&&r.status!=='blocked')continue;
   const rows=await query(sql,"SELECT id FROM bm_matches WHERE candidate_id=$1 AND job_id=$2",[c.id,j.id]);

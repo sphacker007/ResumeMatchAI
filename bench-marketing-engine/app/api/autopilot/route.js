@@ -1,6 +1,6 @@
 import {NextResponse} from 'next/server';
 import {db,query,clean,log} from '../../../lib/server';
-import {prepareApplications,submitReady} from '../../../lib/autopilot';
+import {prepareApplications,submitReady,evaluate} from '../../../lib/autopilot';
 import {roleRelevance} from '../../../lib/role-fit';
 import {scanDiceJobs} from '../../../lib/dice';
 export const dynamic='force-dynamic';
@@ -19,6 +19,12 @@ export async function GET(){
  ]);
  const visible=apps.filter(a=>roleRelevance({role:a.candidate_role},{title:a.job_title}).relevant || ['submitted','submitting','needs_review'].includes(a.status));
  const filteredOut=apps.length-visible.length;
+ const pending=visible.filter(a=>!['submitted','submitting','needs_review'].includes(a.status)).map(a=>a.id);
+ if(pending.length){
+  const details=await query(sql,"SELECT a.id AS application_id,c.name,c.role,c.skills,c.work_auth,c.location,c.experience,c.notes,j.title,j.description,j.location AS job_location,j.company,j.source,j.external_id,p.applicant_email,p.resume_text,p.resume_filename,p.submission_authorized,p.autopilot_enabled,p.min_score,p.preferences FROM bm_applications a JOIN bm_candidates c ON c.id=a.candidate_id JOIN bm_jobs j ON j.id=a.job_id JOIN bm_application_profiles p ON p.candidate_id=c.id WHERE a.id=ANY($1::uuid[]) LIMIT 120",[pending]);
+  const current=new Map(details.map(row=>{const candidate={name:row.name,role:row.role,skills:row.skills,work_auth:row.work_auth,location:row.location,experience:row.experience,notes:row.notes};const job={title:row.title,description:row.description,location:row.job_location,company:row.company,source:row.source,external_id:row.external_id};return [row.application_id,evaluate(candidate,job,row)];}));
+  for(const item of visible){const updated=current.get(item.id);if(updated){item.status=updated.status;item.quality_score=updated.quality;item.reason=updated.reason;item.application_text=updated.body;}}
+ }
  return ok({profiles,applications:visible,totals,filteredOut,sendingConfigured:!!(process.env.GREENHOUSE_JOB_BOARD_API_KEY&&process.env.GREENHOUSE_ALLOWED_BOARD),supportedChannel:'Employer-authorized Greenhouse API only'});
  }catch(e){console.error('Autopilot state',e);return bad('Unable to read autopilot state',500)}
 }

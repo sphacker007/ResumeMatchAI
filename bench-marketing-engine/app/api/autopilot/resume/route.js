@@ -14,11 +14,16 @@ export async function POST(request){
   if(!upload.name.toLowerCase().endsWith('.pdf')||upload.size<300||upload.size>2*1024*1024)return respond({error:'Upload a PDF resume smaller than 2 MB'},400);
   const bytes=Buffer.from(await upload.arrayBuffer());
   if(bytes.toString('ascii',0,5)!=='%PDF-')return respond({error:'File is not a valid PDF'},400);
-  // Import the parser implementation directly. The package root can execute its bundled
-  // debug/test entrypoint when evaluated by the Next.js server compiler.
-  const parseModule=await import('pdf-parse/lib/pdf-parse.js');
-  const parse=parseModule.default||parseModule;
-  const parsed=await parse(bytes,{max:15});
+  // pdf-parse v2 uses a maintained PDF.js engine; load worker setup before the API.
+  await import('pdf-parse/worker');
+  const {PDFParse}=await import('pdf-parse');
+  const parser=new PDFParse({data:new Uint8Array(bytes)});
+  let parsed;
+  try {
+    parsed=await parser.getText({first:15});
+  } finally {
+    await parser.destroy();
+  }
   const text=String(parsed.text||'').replace(/\u0000/g,'').trim().slice(0,50000);
   if(text.length<150)return respond({error:'Text extraction failed. Use a searchable, text-based PDF resume.'},400);
   const sql=db();

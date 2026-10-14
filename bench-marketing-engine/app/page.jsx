@@ -1,7 +1,7 @@
 'use client';
 import {useEffect,useMemo,useState} from 'react';
 import {Activity,ArrowDownRight,ArrowRight,ArrowUpRight,Bell,BriefcaseBusiness,CalendarClock,Check,ChevronDown,ChevronRight,CircleAlert,Clock3,CloudDownload,Database,ExternalLink,FileText,Filter,Inbox,LayoutDashboard,Mail,Menu,Plus,RefreshCw,Search,Settings2,ShieldCheck,Sparkles,Target,Users,UserRoundSearch,Workflow,X,Zap,Globe2,LockKeyhole,Send,Building2} from 'lucide-react';
-const NAV=[{id:'overview',label:'Overview',icon:LayoutDashboard},{id:'candidates',label:'Candidates',icon:Users},{id:'jobs',label:'Job intelligence',icon:BriefcaseBusiness},{id:'matches',label:'Match pipeline',icon:Target},{id:'contacts',label:'Recruiter CRM',icon:UserRoundSearch},{id:'outreach',label:'Outreach drafts',icon:Mail},{id:'sources',label:'Job feeds',icon:Globe2}];
+const NAV=[{id:'overview',label:'Overview',icon:LayoutDashboard},{id:'autopilot',label:'AI Auto Applications',icon:Zap},{id:'candidates',label:'Candidates',icon:Users},{id:'jobs',label:'Job intelligence',icon:BriefcaseBusiness},{id:'matches',label:'Match pipeline',icon:Target},{id:'contacts',label:'Recruiter CRM',icon:UserRoundSearch},{id:'outreach',label:'Outreach drafts',icon:Mail},{id:'sources',label:'Job feeds',icon:Globe2}];
 const EMPTY={candidates:[],sources:[],jobs:[],matches:[],contacts:[],outreach:[],events:[],automation:{}};
 const STAGES=['discovered','review','contacted','interested','screening','interview','closed','rejected'];
 const FORM={
@@ -32,7 +32,7 @@ export default function Home(){
   }catch(e){setError(e.message);return null}finally{setBusy(false)}
  }
  function open(type,defaults={}){setModal(type);setForm(defaults);setError('')}
- function changePage(value){setPage(value);setSearch('');setMobile(false);setError('')}
+ function changePage(value){if(value==='autopilot'){window.location.assign('/autopilot');return;}setPage(value);setSearch('');setMobile(false);setError('')}
  const filter=(rows,fn)=>rows.filter(x=>fn(x).toLowerCase().includes(search.toLowerCase()));
  const matches=filter(d.matches,x=>[x.candidate_name,x.job_title,x.company,x.stage,x.explanation].join(' '));
  const candidates=filter(d.candidates,x=>[x.name,x.role,x.skills,x.location].join(' '));

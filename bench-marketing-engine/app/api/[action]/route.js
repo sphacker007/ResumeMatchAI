@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db,clean,query,log,refreshMatches,scanSources,draftMessage } from '../../../lib/server';
+import {prepareApplications,submitReady} from '../../../lib/autopilot';
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
 const ok=(data,status=200)=>NextResponse.json(data,{status,headers:{'Cache-Control':'no-store'}});
@@ -24,7 +25,7 @@ export async function GET(request,{params}){
   if(action==='state')return ok(await state(sql));
   if(action==='scan'){
    if(!process.env.CRON_SECRET||request.headers.get('authorization')!=='Bearer '+process.env.CRON_SECRET)return bad('Unauthorized cron',401);
-   return ok(await scanSources(sql));
+   const scan=await scanSources(sql);const applications=await prepareApplications(sql);const submissions=await submitReady(sql,5);return ok({scan,applications,submissions});
   }
   return bad('Unknown action',404);
  }catch(e){console.error('GET API error',e);return bad('Server error. Check app configuration and logs.',500)}
@@ -66,7 +67,7 @@ export async function POST(request,{params}){
    await log(sql,'job','Added a manually verified requirement at '+company+'; '+matches+' matches.');
    return ok({created:true},201);
   }
-  if(action==='scan')return ok(await scanSources(sql));
+  if(action==='scan'){const scan=await scanSources(sql);const applications=await prepareApplications(sql);const submissions=await submitReady(sql,5);return ok({scan,applications,submissions});}
   if(action==='stage'){
    if(!uuid(input.id)||!['discovered','review','contacted','interested','screening','interview','closed','rejected'].includes(input.stage))return bad('Invalid stage');
    await query(sql,'UPDATE bm_matches SET stage=$1 WHERE id=$2',[input.stage,input.id]);

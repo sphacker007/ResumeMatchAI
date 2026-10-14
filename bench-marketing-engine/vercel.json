@@ -3,6 +3,10 @@
     {
       "path": "/api/scan",
       "schedule": "0 8 * * *"
+    },
+    {
+      "path": "/api/dice-cron",
+      "schedule": "15 8 * * *"
     }
   ]
 }

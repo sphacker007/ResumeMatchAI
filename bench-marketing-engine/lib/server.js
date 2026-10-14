@@ -1,3 +1,4 @@
+import {readPublicJobs} from './feeds';
 import { neon } from '@neondatabase/serverless';
 export function db() {
   if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL is not configured');
@@ -35,27 +36,30 @@ export function draftMessage(c,j) {
    body:'Hello,\n\nI came across the '+j.title+' opening at '+j.company+'. We represent '+c.name+', a '+c.role+' professional whose stated experience may be relevant.\n\nCore skills: '+c.skills+'.\nLocation: '+c.location+'.\nWork authorization: '+c.work_auth+'.\n\nWould your team consider a staffing-agency candidate for this requirement? If so, I can share the approved resume and coordinate a discussion. Please confirm third-party submission and work-authorization eligibility.\n\nBest regards,\nTalent Marketing Team\n\nIf you prefer not to receive further messages, please let us know.'};
 }
 export async function scanSources(sql) {
-  const sources=await query(sql,'SELECT * FROM bm_sources WHERE enabled=true ORDER BY created_at DESC LIMIT 5');
-  let processed=0,failed=0,jobs=0;
-  for(const source of sources){
-    try{
-      const response=await fetch('https://boards-api.greenhouse.io/v1/boards/'+encodeURIComponent(source.token)+'/jobs?content=true',{signal:AbortSignal.timeout(10000),cache:'no-store'});
-      if(!response.ok)throw new Error('Feed HTTP '+response.status);
-      const data=await response.json();
-      if(!Array.isArray(data.jobs))throw new Error('Invalid feed response');
-      for(const j of data.jobs.slice(0,80)){
-        if(!j.id||!j.title||!j.absolute_url)continue;
-        const desc=clean(j.content,18000).replace(/<[^>]*>/g,' ').replace(/&nbsp;/g,' ').replace(/&amp;/g,'&').replace(/\s+/g,' ').slice(0,12000);
-        const stamp=/^\d{4}-\d\d-\d\d/.test(j.updated_at||'')?j.updated_at:null;
-        await query(sql,'INSERT INTO bm_jobs(source,external_id,company,title,location,description,url,posted_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT(source,external_id) DO UPDATE SET title=EXCLUDED.title,location=EXCLUDED.location,description=EXCLUDED.description,url=EXCLUDED.url',['greenhouse',source.token+':'+j.id,source.company,clean(j.title,250),clean(j.location?.name,180),desc,clean(j.absolute_url,1000),stamp]);
-        jobs++;
-      }
-      await query(sql,'UPDATE bm_sources SET last_scan=NOW(),last_error=NULL WHERE id=$1',[source.id]);processed++;
-    }catch(e){
-      await query(sql,'UPDATE bm_sources SET last_scan=NOW(),last_error=$1 WHERE id=$2',[clean(e.message,300),source.id]);failed++;
+ // Rotating least-recently-scanned boards avoids starving providers.
+ const sources=await query(sql,"SELECT * FROM bm_sources WHERE enabled=true ORDER BY last_scan ASC NULLS FIRST,created_at ASC LIMIT 6");
+ let processed=0,failed=0,scannedJobs=0,inserted=0;
+ const errors=[];
+ for(const source of sources){
+   try{
+    const {provider,slug,items}=await readPublicJobs(source.token,35);
+    for(const j of items){
+      const stamp=/^\d{4}-\d\d-\d\d/.test(j.updated||'')?j.updated:null;
+      const result=await query(sql,"INSERT INTO bm_jobs(source,external_id,company,title,location,description,url,posted_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT(source,external_id) DO UPDATE SET title=EXCLUDED.title,location=EXCLUDED.location,description=EXCLUDED.description,url=EXCLUDED.url RETURNING id",[
+        provider,slug+':'+j.id,source.company,clean(j.title,240),clean(j.location,200),clean(j.description,14000),j.url,stamp
+      ]);
+      if(result.length)inserted++;
+      scannedJobs++;
     }
-  }
-  const matches=processed?await refreshMatches(sql):0;
-  await log(sql,'scan','Scanned '+processed+' job feeds, '+failed+' failed, evaluated '+matches+' matches.');
-  return {sources:processed,failed,jobsProcessed:jobs,matches};
+    await query(sql,"UPDATE bm_sources SET last_scan=NOW(),last_error=NULL WHERE id=$1",[source.id]);
+    processed++;
+   }catch(e){
+    errors.push(source.company+': '+clean(e.message,120));
+    await query(sql,"UPDATE bm_sources SET last_scan=NOW(),last_error=$1 WHERE id=$2",[clean(e.message,300),source.id]);
+    failed++;
+   }
+ }
+ const matches=processed?await refreshMatches(sql):0;
+ await log(sql,'scan','Scanned '+processed+' public job feeds, '+failed+' failed, processed '+scannedJobs+' current postings; evaluated '+matches+' matches.');
+ return {sources:processed,failed,jobsProcessed:scannedJobs,upserted:inserted,matches,errors};
 }

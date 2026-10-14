@@ -1,6 +1,6 @@
 import {NextResponse} from 'next/server';
-import {db,query,clean,log} from '../../lib/server';
-import {prepareApplications,submitReady} from '../../lib/autopilot';
+import {db,query,clean,log} from '../../../lib/server';
+import {prepareApplications,submitReady} from '../../../lib/autopilot';
 export const dynamic='force-dynamic';
 export const runtime='nodejs';
 const ok=(x,status=200)=>NextResponse.json(x,{status,headers:{'Cache-Control':'no-store'}});

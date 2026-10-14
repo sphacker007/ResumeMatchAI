@@ -17,7 +17,7 @@ async function state(sql){
  query(sql,'SELECT o.*,c.name AS candidate_name,j.title AS job_title,j.company AS company,t.email AS contact_email,t.name AS contact_name FROM bm_outreach o JOIN bm_matches m ON o.match_id=m.id JOIN bm_candidates c ON c.id=m.candidate_id JOIN bm_jobs j ON j.id=m.job_id LEFT JOIN bm_contacts t ON o.contact_id=t.id ORDER BY o.created_at DESC LIMIT 150'),
  query(sql,'SELECT * FROM bm_events ORDER BY created_at DESC LIMIT 15')
  ]);
- return {candidates,sources,jobs,matches,contacts,outreach,events,automation:{outboundSending:false,aiProviderConfigured:!!process.env.OPENAI_API_KEY,jobFeed:'Greenhouse / Lever / Ashby',cron:'daily'}};
+ return {candidates,sources,jobs,matches,contacts,outreach,events,automation:{outboundSending:false,aiProviderConfigured:!!process.env.OPENAI_API_KEY,jobFeed:'Greenhouse / Lever / Ashby / Dice MCP',cron:'daily'}};
 }
 export async function GET(request,{params}){
  try{

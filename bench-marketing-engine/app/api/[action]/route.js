@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db,clean,query,log,refreshMatches,scanSources,draftMessage } from '../../../lib/server';
+import {readPublicJobs,parseFeedToken} from '../../../lib/feeds';
 import {prepareApplications,submitReady} from '../../../lib/autopilot';
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
@@ -23,6 +24,16 @@ export async function GET(request,{params}){
  try{
   const {action}=await params,sql=db();
   if(action==='state')return ok(await state(sql));
+  if(action==='connection-status') {
+    const sources=await query(sql,"SELECT company,token,last_scan,last_error FROM bm_sources WHERE enabled=true ORDER BY created_at DESC LIMIT 30");
+    const selected=new Map();
+    for(const source of sources){const type=parseFeedToken(source.token).provider;if(!selected.has(type))selected.set(type,source);}
+    const providers=await Promise.all(Array.from(selected.entries()).map(async([provider,source])=>{
+      try {const result=await readPublicJobs(source.token,2);return {provider,company:source.company,connection:'reachable',sampleJobs:result.items.map(j=>({title:j.title,url:j.url}))};}
+      catch(e){return {provider,company:source.company,connection:'error',error:clean(e.message,150)};}
+    }));
+    return ok({sourcesConnected:sources.length,providers,hasApplicationSubmissionCredential:!!(process.env.GREENHOUSE_JOB_BOARD_API_KEY&&process.env.GREENHOUSE_ALLOWED_BOARD)});
+  }
   if(action==='scan'){
    if(!process.env.CRON_SECRET||request.headers.get('authorization')!=='Bearer '+process.env.CRON_SECRET)return bad('Unauthorized cron',401);
    const scan=await scanSources(sql);const applications=await prepareApplications(sql);const submissions=await submitReady(sql,5);return ok({scan,applications,submissions});

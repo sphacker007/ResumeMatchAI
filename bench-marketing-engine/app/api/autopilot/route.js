@@ -1,6 +1,9 @@
 import {NextResponse} from 'next/server';
 import {db,query,clean,log} from '../../../lib/server';
 import {prepareApplications,submitReady} from '../../../lib/autopilot';
+import {roleRelevance} from '../../../lib/role-fit';
+import {scanDiceJobs} from '../../../lib/dice';
+import {refreshMatches} from '../../../lib/server';
 export const dynamic='force-dynamic';
 export const runtime='nodejs';
 const ok=(x,status=200)=>NextResponse.json(x,{status,headers:{'Cache-Control':'no-store'}});
@@ -11,10 +14,12 @@ export async function GET(){
  const sql=db();
  const [profiles,apps,totals]=await Promise.all([
   query(sql,"SELECT candidate_id,applicant_email,phone,linkedin_url,substring(resume_text,1,10000) AS resume_text,resume_filename,submission_authorized,autopilot_enabled,min_score,daily_cap,preferences,updated_at FROM bm_application_profiles ORDER BY updated_at DESC LIMIT 100"),
-  query(sql,"SELECT a.id,a.candidate_id,a.job_id,a.status,a.quality_score,a.reason,a.application_text,a.submission_channel,a.submitted_at,a.confirmation_ref,a.last_error,a.updated_at,c.name AS candidate_name,j.title AS job_title,j.company,j.url AS job_url FROM bm_applications a JOIN bm_candidates c ON c.id=a.candidate_id JOIN bm_jobs j ON j.id=a.job_id ORDER BY a.created_at DESC LIMIT 250"),
+  query(sql,"SELECT a.id,a.candidate_id,a.job_id,a.status,a.quality_score,a.reason,a.application_text,a.submission_channel,a.submitted_at,a.confirmation_ref,a.last_error,a.updated_at,c.name AS candidate_name,c.role AS candidate_role,j.title AS job_title,j.company,j.url AS job_url FROM bm_applications a JOIN bm_candidates c ON c.id=a.candidate_id JOIN bm_jobs j ON j.id=a.job_id ORDER BY a.created_at DESC LIMIT 750"),
   query(sql,"SELECT status,count(*)::int AS count FROM bm_applications GROUP BY status")
  ]);
- return ok({profiles,applications:apps,totals,sendingConfigured:!!(process.env.GREENHOUSE_JOB_BOARD_API_KEY&&process.env.GREENHOUSE_ALLOWED_BOARD),supportedChannel:'Employer-authorized Greenhouse API only'});
+ const visible=apps.filter(a=>roleRelevance({role:a.candidate_role},{title:a.job_title}).relevant || ['submitted','submitting','needs_review'].includes(a.status));
+ const filteredOut=apps.length-visible.length;
+ return ok({profiles,applications:visible,totals,filteredOut,sendingConfigured:!!(process.env.GREENHOUSE_JOB_BOARD_API_KEY&&process.env.GREENHOUSE_ALLOWED_BOARD),supportedChannel:'Employer-authorized Greenhouse API only'});
  }catch(e){console.error('Autopilot state',e);return bad('Unable to read autopilot state',500)}
 }
 export async function POST(request){
@@ -37,8 +42,12 @@ export async function POST(request){
   return ok({saved:true,...queued});
  }
  if(action==='prepare'){
-  const result=await prepareApplications(sql,isUuid(p.candidate_id)?p.candidate_id:null);
-  return ok(result);
+  const cid=isUuid(p.candidate_id)?p.candidate_id:null;
+  const targets=await query(sql,'SELECT DISTINCT role FROM bm_candidates WHERE active=true'+(cid?' AND id=$1':'')+' LIMIT 3',cid?[cid]:[]);
+  const discovery=targets.length?await scanDiceJobs(sql,targets.map(c=>c.role),10):{imported:0,queries:0};
+  if(discovery.imported)await refreshMatches(sql);
+  const result=await prepareApplications(sql,cid);
+  return ok({...result,discovery});
  }
  if(action==='submit'){
   // Explicitly enabled candidate profiles plus an employer-provided credential are both mandatory.

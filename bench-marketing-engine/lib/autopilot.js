@@ -1,5 +1,5 @@
 import {clean,query,matchCandidate,log} from './server';
-import {roleRelevance} from './role-fit';
+import {roleRelevance,jobLooksComplete} from './role-fit';
 const EXCLUDE=/\b(no (staffing )?agencies|no third[- ]party (candidates?|recruiters?|vendors?)|no vendors|no c2c|w2 only)\b/i;
 export function evaluate(c,j,p){
  const relevance=roleRelevance(c,j);
@@ -7,19 +7,20 @@ export function evaluate(c,j,p){
  const score=matchCandidate(c,j);
  const jd=clean(j.description,16000);
  const blockers=[];
+ const reviews=[];
  if(score.flags)blockers.push(score.flags);
  const candidateLoc=clean(c.location,220).toLowerCase();
  const jobLoc=clean(j.location,220).toLowerCase();
  const remote=/remote|anywhere|united states|usa/.test(jobLoc);
- if(candidateLoc && jobLoc && !remote && !candidateLoc.split(/[,;/]/).map(x=>x.trim()).filter(x=>x.length>2).some(part=>jobLoc.includes(part)||part.includes(jobLoc)))blockers.push('Job location does not match the candidate location preferences.');
+ if(candidateLoc && jobLoc && !remote && !candidateLoc.split(/[,;/]/).map(x=>x.trim()).filter(x=>x.length>2).some(part=>jobLoc.includes(part)||part.includes(jobLoc)))reviews.push('Location needs confirmation; preferences may differ from posting.');
  const requestedYears=[...jd.matchAll(/(?:at least|minimum(?: of)?|requires?)?\s*(\d{1,2})\+?\s*years? (?:of )?(?:professional )?(?:experience|in)/gi)].map(m=>Number(m[1]));
- if(requestedYears.length&&Number(c.experience||0)>0&&Math.max(...requestedYears)>Number(c.experience)+1)blockers.push('Experience minimum exceeds verified years.');
+ if(requestedYears.length&&Number(c.experience||0)>0&&Math.max(...requestedYears)>Number(c.experience)+1)reviews.push('Experience requirement needs verification against the resume.');
  if(EXCLUDE.test(jd))blockers.push('The posting excludes staffing firm submissions.');
  if(/no sponsorship|unable to sponsor|will not sponsor/i.test(jd)&&/need sponsorship|require sponsorship/i.test(c.notes+' '+p.preferences))blockers.push('Sponsorship excluded.');
  const skills=clean(c.skills,4000).split(/[,;\n]/).map(s=>s.trim()).filter(Boolean);
  const verified=skills.filter(s=>clean(p.resume_text,50000).toLowerCase().includes(s.toLowerCase()));
  const relevant=verified.filter(s=>jd.toLowerCase().includes(s.toLowerCase()));
- const quality=Math.min(score.score,Math.round(relevant.length/Math.max(3,verified.length)*70+(score.score>=70?22:8)));
+ const quality=Math.min(95,Math.round(20+(verified.length?relevant.length/verified.length:0)*50+Math.min(relevant.length,5)*5));
  const missing=[];
  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(p.applicant_email||''))missing.push('candidate email');
  if(!p.resume_text||p.resume_text.length<150)missing.push('verified resume text');
@@ -27,8 +28,10 @@ export function evaluate(c,j,p){
  if(c.name.trim().split(/\s+/).length<2)missing.push('full candidate name');
  let status='prepared',reason='';
  if(blockers.length){status='blocked';reason=blockers.join(' ');}
- else if(quality<Number(p.min_score||80)){status='low_match';reason='Quality score '+quality+' below threshold '+p.min_score;}
  else if(missing.length){status='needs_profile';reason='Missing '+missing.join(', ');}
+ else if(reviews.length){status='eligibility_review';reason=reviews.join(' ');}
+ else if(quality<Number(p.min_score||80)){status='low_match';reason='Verified skill overlap score '+quality+'% is below the '+p.min_score+'% threshold.';}
+ else if(!jobLooksComplete(j)){status='needs_details';reason='Only a summary is available; full job requirements need review.';}
  else if(!p.submission_authorized){status='needs_consent';reason='Candidate permission for submissions has not been confirmed.';}
  else if(!p.autopilot_enabled){status='paused';reason='Autopilot disabled for this candidate.';}
  else if(j.source==='greenhouse'&&process.env.GREENHOUSE_JOB_BOARD_API_KEY&&process.env.GREENHOUSE_ALLOWED_BOARD===String(j.external_id).split(':')[0]){status='ready';reason='Employer-authorized application API available.';}
@@ -38,10 +41,10 @@ export function evaluate(c,j,p){
 }
 export async function prepareApplications(sql,candidateId=null){
  const profiles=await query(sql,"SELECT c.*,p.applicant_email,p.phone,p.linkedin_url,p.resume_text,p.resume_filename,p.submission_authorized,p.autopilot_enabled,p.min_score,p.daily_cap,p.preferences FROM bm_candidates c JOIN bm_application_profiles p ON c.id=p.candidate_id WHERE c.active=true"+(candidateId?" AND c.id=$1":"")+" LIMIT 40",candidateId?[candidateId]:[]);
- const jobs=await query(sql,"SELECT * FROM bm_jobs ORDER BY created_at DESC LIMIT 160");
- let prepared=0,ready=0,blocked=0;
+ const jobs=await query(sql,"SELECT * FROM bm_jobs ORDER BY posted_at DESC NULLS LAST,created_at DESC LIMIT 350");
+ let prepared=0,ready=0,blocked=0,irrelevant=0;
  for(const c of profiles)for(const j of jobs){
-  if(!roleRelevance(c,j).relevant)continue;
+  if(!roleRelevance(c,j).relevant){irrelevant++;continue;}
   const r=evaluate(c,j,c);
   if(r.quality<Math.max(50,c.min_score-25)&&r.status!=='blocked')continue;
   const rows=await query(sql,"SELECT id FROM bm_matches WHERE candidate_id=$1 AND job_id=$2",[c.id,j.id]);
@@ -49,7 +52,7 @@ export async function prepareApplications(sql,candidateId=null){
   prepared++;if(r.status==='ready')ready++;if(r.status==='blocked')blocked++;
  }
  if(prepared)await log(sql,'autopilot','Evaluated '+prepared+' opportunities; '+ready+' ATS-ready; '+blocked+' blocked.');
- return {prepared,ready,blocked};
+ return {prepared,ready,blocked,irrelevant};
 }
 async function sendToGreenhouse(c,j){
  const parts=String(j.external_id).split(':');

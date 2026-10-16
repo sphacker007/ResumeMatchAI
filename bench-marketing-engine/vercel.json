@@ -5,7 +5,7 @@
       "schedule": "0 8 * * *"
     },
     {
-      "path": "/api/dice-cron",
+      "path": "/api/gmail/cron",
       "schedule": "15 8 * * *"
     }
   ]

@@ -29,8 +29,8 @@ export function evaluate(c,j,p){
  let status='prepared',reason='';
  if(blockers.length){status='blocked';reason=blockers.join(' ');}
  else if(missing.length){status='needs_profile';reason='Missing '+missing.join(', ');}
- else if(reviews.length){status='eligibility_review';reason=reviews.join(' ');}
  else if(quality<Number(p.min_score||80)){status='low_match';reason='Verified skill overlap score '+quality+'% is below the '+p.min_score+'% threshold.';}
+ else if(reviews.length){status='eligibility_review';reason=reviews.join(' ');}
  else if(!jobLooksComplete(j)){status='needs_details';reason='Only a summary is available; full job requirements need review.';}
  else if(!p.submission_authorized){status='needs_consent';reason='Candidate permission for submissions has not been confirmed.';}
  else if(!p.autopilot_enabled){status='paused';reason='Autopilot disabled for this candidate.';}

@@ -126,26 +126,31 @@ export async function sendMarketingAlert(sender,event,candidateName,mailboxAddre
 }
 export async function syncMailboxes(sql){
   if(!googleConfigured())return {configured:false,processed:0,events:0,alerts:0};
-  const mailboxes=await query(sql,"SELECT id,kind,candidate_id,address,refresh_token_enc,last_checked_at,status FROM bm_gmail_mailboxes WHERE kind='candidate' AND status='connected' ORDER BY last_checked_at ASC NULLS FIRST LIMIT 12");
+  const mailboxes=await query(sql,"SELECT id,kind,candidate_id,address,refresh_token_enc,last_checked_at,status FROM bm_gmail_mailboxes WHERE kind='candidate' AND status='connected' ORDER BY last_checked_at ASC NULLS FIRST LIMIT 5");
   const [marketing]=await query(sql,"SELECT * FROM bm_gmail_mailboxes WHERE kind='marketing' AND status='connected' LIMIT 1");
   let processed=0,events=0,alerts=0,failures=0;
   for(const m of mailboxes){
     try{
       const started=new Date();
       const access=await gmailAccess(m);
-      const after=Math.floor((new Date(m.last_checked_at||m.connected_at||Date.now()).getTime()-60000)/1000);
-      const messages=await gmailFetch(access,'/messages',{q:'in:inbox after:'+Math.max(0,after)+' -in:trash -in:spam',maxResults:'60'});
+      const after=Math.floor((new Date(m.last_checked_at||Date.now()).getTime()-60000)/1000);
+      const messages=await gmailFetch(access,'/messages',{q:'in:inbox after:'+Math.max(0,after)+' -in:trash -in:spam',maxResults:'50'});
       for(const stub of messages.messages||[]){
         if(!stub.id)continue;
         const existed=await query(sql,"SELECT id FROM bm_gmail_events WHERE mailbox_id=$1 AND gmail_message_id=$2",[m.id,stub.id]);
         if(existed.length)continue;
-        const full=await gmailFetch(access,'/messages/'+encodeURIComponent(stub.id),{format:'metadata',metadataHeaders:'From',metadataHeaders:'Subject'});
+        const full=await gmailFetch(access,'/messages/'+encodeURIComponent(stub.id),{format:'metadata'});
         const info=classifyMessage(full);
         if(!info)continue;
         const result=await query(sql,"INSERT INTO bm_gmail_events(mailbox_id,candidate_id,gmail_message_id,gmail_thread_id,category,sender,subject,snippet,received_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) ON CONFLICT(mailbox_id,gmail_message_id) DO NOTHING RETURNING id",[m.id,m.candidate_id,stub.id,info.thread,info.category,info.sender,info.subject,info.snippet,info.timestamp]);
         events+=result.length;
       }
-      await query(sql,"UPDATE bm_gmail_mailboxes SET last_checked_at=$1,last_error=NULL,updated_at=NOW() WHERE id=$2",[started,m.id]);processed++;
+      if(messages.nextPageToken){
+        await query(sql,"UPDATE bm_gmail_mailboxes SET last_error='Large inbox: only 50 recent messages checked. Sync again to inspect earlier messages.',updated_at=NOW() WHERE id=$1",[m.id]);
+      }else{
+        await query(sql,"UPDATE bm_gmail_mailboxes SET last_checked_at=$1,last_error=NULL,updated_at=NOW() WHERE id=$2",[started,m.id]);
+      }
+      processed++;
     }catch(e){
       failures++;
       await query(sql,"UPDATE bm_gmail_mailboxes SET last_error=$1,updated_at=NOW() WHERE id=$2",[String(e.message).slice(0,230),m.id]);

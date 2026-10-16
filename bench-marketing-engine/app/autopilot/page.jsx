@@ -1,7 +1,7 @@
 'use client';
 import {useEffect,useMemo,useState} from 'react';
 import Link from 'next/link';
-import {ArrowLeft,ArrowRight,ArrowUpRight,CheckCircle2,ChevronDown,Clock3,FileCheck2,FileText,Globe,Info,LoaderCircle,LockKeyhole,PauseCircle,Play,RefreshCw,Send,Settings2,ShieldCheck,Sparkles,Target,UploadCloud,Users,XCircle,Zap} from 'lucide-react';
+import {ArrowLeft,ArrowRight,ArrowUpRight,CheckCircle2,ChevronDown,Clock3,FileCheck2,FileText,Globe,Info,LoaderCircle,LockKeyhole,Mail,PauseCircle,Play,RefreshCw,Send,Settings2,ShieldCheck,Sparkles,Target,UploadCloud,Users,XCircle,Zap} from 'lucide-react';
 import './autopilot.css';
 const blank={candidates:[],jobs:[]};
 const empty={profiles:[],applications:[],totals:[],filteredOut:0,sendingConfigured:false};

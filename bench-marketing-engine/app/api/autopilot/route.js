@@ -9,6 +9,13 @@ export const maxDuration=60;
 const ok=(x,status=200)=>NextResponse.json(x,{status,headers:{'Cache-Control':'no-store'}});
 const bad=(s,status=400)=>ok({error:s},status);
 const isUuid=(s)=>/^[0-9a-f-]{36}$/i.test(String(s||''));
+const jobSearchVariants=(role)=>{
+ const t=String(role||'').toLowerCase();
+ if(/full.?stack|software|python|java|react|frontend|backend/.test(t))return [role,'Software Engineer','Full Stack Developer'];
+ if(/data scien/.test(t))return [role,'Machine Learning Engineer','Data Scientist'];
+ if(/ai|machine learning|ml engineer|llm/.test(t))return [role,'AI Engineer','Machine Learning Engineer'];
+ return [role];
+};
 export async function GET(){
  try{
  const sql=db();
@@ -50,7 +57,8 @@ export async function POST(request){
  if(action==='prepare'){
   const cid=isUuid(p.candidate_id)?p.candidate_id:null;
   const targets=await query(sql,'SELECT DISTINCT role FROM bm_candidates WHERE active=true'+(cid?' AND id=$1':'')+' LIMIT 3',cid?[cid]:[]);
-  const discovery=targets.length?await scanDiceJobs(sql,targets.map(c=>c.role),10):{imported:0,queries:0};
+  const keywords=Array.from(new Set(targets.flatMap(c=>jobSearchVariants(c.role)))).slice(0,4);
+  const discovery=keywords.length?await scanDiceJobs(sql,keywords,15):{imported:0,queries:0};
   const result=await prepareApplications(sql,cid);
   return ok({...result,discovery});
  }

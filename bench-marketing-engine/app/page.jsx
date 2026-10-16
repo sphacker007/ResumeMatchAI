@@ -1,7 +1,7 @@
 'use client';
 import {useEffect,useMemo,useState} from 'react';
 import {Activity,ArrowDownRight,ArrowRight,ArrowUpRight,Bell,BriefcaseBusiness,CalendarClock,Check,ChevronDown,ChevronRight,CircleAlert,Clock3,CloudDownload,Database,ExternalLink,FileText,Filter,Inbox,LayoutDashboard,Mail,Menu,Plus,RefreshCw,Search,Settings2,ShieldCheck,Sparkles,Target,Users,UserRoundSearch,Workflow,X,Zap,Globe2,LockKeyhole,Send,Building2} from 'lucide-react';
-const NAV=[{id:'overview',label:'Overview',icon:LayoutDashboard},{id:'autopilot',label:'AI Auto Applications',icon:Zap},{id:'candidates',label:'Candidates',icon:Users},{id:'jobs',label:'Job intelligence',icon:BriefcaseBusiness},{id:'matches',label:'Match pipeline',icon:Target},{id:'contacts',label:'Recruiter CRM',icon:UserRoundSearch},{id:'outreach',label:'Outreach drafts',icon:Mail},{id:'sources',label:'Job feeds',icon:Globe2}];
+const NAV=[{id:'overview',label:'Overview',icon:LayoutDashboard},{id:'autopilot',label:'AI Auto Applications',icon:Zap},{id:'gmail',label:'Gmail & Alerts',icon:Bell},{id:'candidates',label:'Candidates',icon:Users},{id:'jobs',label:'Job intelligence',icon:BriefcaseBusiness},{id:'matches',label:'Match pipeline',icon:Target},{id:'contacts',label:'Recruiter CRM',icon:UserRoundSearch},{id:'outreach',label:'Outreach drafts',icon:Mail},{id:'sources',label:'Job feeds',icon:Globe2}];
 const EMPTY={candidates:[],sources:[],jobs:[],matches:[],contacts:[],outreach:[],events:[],automation:{}};
 const STAGES=['discovered','review','contacted','interested','screening','interview','closed','rejected'];
 const FORM={
@@ -34,7 +34,7 @@ export default function Home(){
  function open(type,defaults={}){setModal(type);setForm(type==='source'?{provider:'greenhouse',...defaults}:defaults);setError('')}
  async function searchDice(){setDiceBusy(true);setError('');try{const res=await fetch('/api/dice-search',{method:'POST',headers:{'Content-Type':'application/json','x-bench-request':'1'},body:JSON.stringify({keyword:diceKeyword})});const data=await res.json();if(!res.ok)throw Error(data.error||'Dice job search failed');await reload();if(data.scan?.failed)throw Error(data.scan?.errors?.join('; ')||'Dice search could not complete');notify('Imported '+(data.scan?.imported||0)+' verified Dice listings.')}catch(e){setError(e.message)}finally{setDiceBusy(false)}}
  async function testFeeds(){setChecking(true);try{const r=await fetch('/api/connection-status',{cache:'no-store'});const payload=await r.json();if(!r.ok)throw Error(payload.error||'Connection check failed');setConnections(payload);notify('Job provider connection tests completed')}catch(e){setError(e.message)}finally{setChecking(false)}}
- function changePage(value){if(value==='autopilot'){window.location.assign('/autopilot');return;}setPage(value);setSearch('');setMobile(false);setError('')}
+ function changePage(value){if(value==='autopilot'||value==='gmail'){window.location.assign(value==='gmail'?'/gmail':'/autopilot');return;}setPage(value);setSearch('');setMobile(false);setError('')}
  const filter=(rows,fn)=>rows.filter(x=>fn(x).toLowerCase().includes(search.toLowerCase()));
  const matches=filter(d.matches,x=>[x.candidate_name,x.job_title,x.company,x.stage,x.explanation].join(' '));
  const candidates=filter(d.candidates,x=>[x.name,x.role,x.skills,x.location].join(' '));

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 export function middleware(request) {
  const pass=process.env.APP_PASSWORD, user=process.env.APP_USER;
- if(['/api/scan','/api/dice-cron'].includes(request.nextUrl.pathname) && request.method==='GET' && process.env.CRON_SECRET && request.headers.get('authorization')==='Bearer '+process.env.CRON_SECRET)return NextResponse.next();
+ if(['/api/scan','/api/dice-cron','/api/gmail/cron'].includes(request.nextUrl.pathname) && request.method==='GET' && process.env.CRON_SECRET && request.headers.get('authorization')==='Bearer '+process.env.CRON_SECRET)return NextResponse.next();
  // Vercel project Deployment Protection (SSO) is required for the private initial release.
  // Optional application-level Basic Auth is enabled only after both credentials are configured.
  if(!pass || !user)return NextResponse.next();

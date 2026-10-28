@@ -5,7 +5,7 @@
 - Vercel owner workspace: Shubh (user account)
 - Existing Vercel project: krutik-patel-portfolio
 - Project ID: prj_jtlIs3eJQKsdIJnO4A6shzunbEuE
-- Production deployment ID: dpl_BLwNTjmeqXfWTXJnCs4qGng8dH4a
+- Production deployment ID: dpl_55YQDjPe5RiEPj6KrnLkNh7LxAbR
 - Deployment status: READY, production HTTP 200 verified October 28, 2026.
 
 ## Source
@@ -37,3 +37,11 @@ Preview deployment: dpl_AWJju4szw3zoE8vD4fBxp8oQ4gHi
 Production deployment: dpl_BLwNTjmeqXfWTXJnCs4qGng8dH4a
 Verified static source structure, 14 internal anchors (none broken), 4 project GitHub links, 8 expertise rows, 4 count-up values, all contact details, JavaScript syntax via node --check, live HTTP 200, Vercel READY and no alias errors.
 Visual browser-level animation comparison was not run in automated QA.
+
+## Contact polish and browser branding (October 28, 2026)
+- Three icon-labelled social CTAs: Email (Gmail browser compose), GitHub, and LinkedIn. All URLs use Krutik's public profile/contact, not portfolio-owner credentials.
+- Email compose opens in a new browser tab with recipient `pkrutik154@gmail.com`; fallback `Copy email` control uses Clipboard API and a legacy selection fallback.
+- Footer button copies the exact URL `https://krutik-patel-portfolio.vercel.app/`, without ChatGPT query parameters.
+- Site provides `<link rel="canonical">` for the clean address and serves a custom `/favicon.svg` KP monogram, verified MIME `image/svg+xml` with HTTP 200.
+- New production deployment `dpl_55YQDjPe5RiEPj6KrnLkNh7LxAbR`, status READY and verified public URL, favicon, all social buttons, content anchors and all project links.
+- This is a static source update only. It does not connect GitHub CI/CD. Gmail compose may ask a visitor to sign in if not already using Gmail.

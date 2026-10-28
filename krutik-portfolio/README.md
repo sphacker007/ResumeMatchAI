@@ -5,7 +5,7 @@
 - Vercel owner workspace: Shubh (user account)
 - Existing Vercel project: krutik-patel-portfolio
 - Project ID: prj_jtlIs3eJQKsdIJnO4A6shzunbEuE
-- Production deployment ID: dpl_G38wGQRdD5HzvAeeUvP1MNnTPyEL
+- Production deployment ID: dpl_4T97G99BbHBUPdAJhiaH4h923jvc
 - Deployment status: READY, production HTTP 200 verified October 28, 2026.
 
 ## Source
@@ -53,3 +53,11 @@ Visual browser-level animation comparison was not run in automated QA.
 - The fixed whole-site starfield now updates actual x/y positions using elapsed real time, visibly drifts and twinkles continuously, and has a subtle occasional shooting-star streak. Respects reduced motion and pauses when the page is hidden.
 - Fixed Vercel project and clean domain retained. Production deployment: `dpl_G38wGQRdD5HzvAeeUvP1MNnTPyEL`.
 - Preview static/JS syntax checks and live HTTP content checks all passed; no interactive browser-scroll test was run.
+
+## Zoom-specific hero graphics fix (October 28, 2026)
+- Fixed original canvas 3D projection bug: old `2.8/(3.5-Z)` was singular for pixel-unit depth values, producing extremely long lines and clipped glowing rectangle edges at some widths/zoom factors.
+- New stable pixel-unit projection `focal/(focal-Z)` with camera focal distance based on canvas size.
+- 3D model radius adjusted to 27% of the smaller canvas dimension, with verified positive margins across 310, 390, 450, 500 and 550px canvas sizes and all sampled rotation angles.
+- Added canvas clipping to the hero container and fractional CSS pixel sizing using `getBoundingClientRect`, matching canvas backing resolution to CSS dimensions.
+- Added a canvas `ResizeObserver` for reflow/browser zoom changes. Preserves core motion, moving stars, skill effects and navigation.
+- Preview: `dpl_D2jZftecCxU2XukGf4HBK7ixCabC`, production: `dpl_4T97G99BbHBUPdAJhiaH4h923jvc` (READY, alias `krutik-patel-portfolio.vercel.app`). Live HTML and favicon fetch and static checks passed; interactive browser screenshot at the user's exact zoom setting was not run.

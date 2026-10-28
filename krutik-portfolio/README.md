@@ -5,7 +5,7 @@
 - Vercel owner workspace: Shubh (user account)
 - Existing Vercel project: krutik-patel-portfolio
 - Project ID: prj_jtlIs3eJQKsdIJnO4A6shzunbEuE
-- Production deployment ID: dpl_55YQDjPe5RiEPj6KrnLkNh7LxAbR
+- Production deployment ID: dpl_G38wGQRdD5HzvAeeUvP1MNnTPyEL
 - Deployment status: READY, production HTTP 200 verified October 28, 2026.
 
 ## Source
@@ -45,3 +45,11 @@ Visual browser-level animation comparison was not run in automated QA.
 - Site provides `<link rel="canonical">` for the clean address and serves a custom `/favicon.svg` KP monogram, verified MIME `image/svg+xml` with HTTP 200.
 - New production deployment `dpl_55YQDjPe5RiEPj6KrnLkNh7LxAbR`, status READY and verified public URL, favicon, all social buttons, content anchors and all project links.
 - This is a static source update only. It does not connect GitHub CI/CD. Gmail compose may ask a visitor to sign in if not already using Gmail.
+
+## Reusable scroll animation & moving stars fix (October 28, 2026)
+- Skill neon lines now use a keyframed left-to-right sweep and IntersectionObserver re-entry/reset behavior; returning to a row on scroll replays the sweep.
+- Reveal animations return to their initial state when the element exits the observed viewport and replay when re-entering.
+- Impact counters reset outside viewport and count back up on every re-entry; respects reduced-motion preference.
+- The fixed whole-site starfield now updates actual x/y positions using elapsed real time, visibly drifts and twinkles continuously, and has a subtle occasional shooting-star streak. Respects reduced motion and pauses when the page is hidden.
+- Fixed Vercel project and clean domain retained. Production deployment: `dpl_G38wGQRdD5HzvAeeUvP1MNnTPyEL`.
+- Preview static/JS syntax checks and live HTTP content checks all passed; no interactive browser-scroll test was run.

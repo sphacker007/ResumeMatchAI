@@ -18,10 +18,10 @@
 - Current Vercel site already implements the reference-inspired design, animations, modals and responsive sections. Preserve existing output while linking source to GitHub.
 
 ## Resume verification
-The most recent resume copy located is "Krutik Resume.pdf" attached to an email sent by Krutik on October 22, 2026. The user provided a motion recording in this conversation but no new PDF attachment. Verify against the user's intended latest PDF before final publishing changes. Do not invent case-study names as public project titles or invent credentials.
+The user's latest uploaded resume is "Krutik Patel Resume(20261028-211809).pdf" dated October 28, 2026. Its contact information is (682) 412-0405 and pkrutik154@gmail.com. All other resume content is unchanged from the prior copy. Website contact and source were updated October 28, 2026. Do not invent case-study names as public project titles or invent credentials.
 
 ### Identity
-Krutik Patel · Arlington TX USA · +1 (682) 317-0469 · krutikdp007@gmail.com
+Krutik Patel · Arlington TX USA · +1 (682) 412-0405 · pkrutik154@gmail.com
 LinkedIn https://www.linkedin.com/in/krutik-d-patel · GitHub https://github.com/krutik-hub
 
 ### Positioning
@@ -76,3 +76,11 @@ Testing: Pytest, Playwright, Jest, Selenium, Postman, SonarQube
 - User-owned GitHub/Vercel; DO NOT sign into Krutik's GitHub or use Krutik's Vercel.
 - Existing deployed URL stays stable and publicly accessible (disable Vercel Authentication if necessary).
 - Run mobile/desktop screenshot comparison against user-supplied recording.
+
+## Contact update deployed October 28, 2026
+- Public URL remains https://krutik-patel-portfolio.vercel.app/
+- New deployment ID: `dpl_8HueTpXLt2H9hDjNkfU3uC5Yq1hH`
+- All three old email references replaced and phone display/tel link updated.
+- Live HTTP 200 verified: new email 3 occurrences, new phone 1 display + 1 tel link, old contacts 0.
+- Website's existing layout, animation, and work content preserved via exact source replacement.
+- Actual site source exists in this branch at `krutik-portfolio/index.html`; Vercel deployment remains direct/API-linked, not auto GitHub linked.
